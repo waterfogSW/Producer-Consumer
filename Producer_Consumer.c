@@ -8,9 +8,9 @@ char buffer[MAX];
 int fill_ptr = 0;
 int use_ptr = 0;
 int count = 0;
-int loops = 1;
+int loops = 3;
 
-pthread_cond_t empty, fill;
+pthread_cond_t empty, fill, pop;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct Enqueue_arg {
@@ -18,6 +18,7 @@ typedef struct Enqueue_arg {
 }EA;
 
 typedef struct Dequeue_arg {
+    int             volume;
 	char            *_value;     // Pop value of queue
 }DA;
 
@@ -34,14 +35,13 @@ void get(char* value) {
     *value = tmp;
 }
 
-void *producer(void *multi_arg) {
-    EA *arg = (EA *)multi_arg;
-    char value   = arg->_value;
-    for (int i = 0; i < loops; i++) {
+void *producer(void *input) {
+    char *car = (char*)input;
+    for (int i = 0; i < 9; i++) {
         pthread_mutex_lock(&mutex);
         while (count == MAX)
             pthread_cond_wait(&empty, &mutex);
-        put(value);
+        put(car[i]);
         pthread_cond_broadcast(&fill);
         pthread_mutex_unlock(&mutex);
     }
@@ -50,12 +50,14 @@ void *producer(void *multi_arg) {
 void *consumer_A(void *multi_arg) {
     DA *arg = (DA *)multi_arg;
     char *value  = arg->_value;
-
-    for (int i = 0; i < loops; i++) {
+    for (int i = 0; i < arg->volume; i++) {
         pthread_mutex_lock(&mutex);
-        while (count == 0 || buffer[use_ptr] != 'A')
+        while (count == 0)
             pthread_cond_wait(&fill, &mutex);
+        while (buffer[use_ptr] != 'A')
+            pthread_cond_wait(&pop, &mutex);
         get(value);
+        pthread_cond_broadcast(&pop);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -65,11 +67,14 @@ void *consumer_B(void *multi_arg) {
     DA *arg = (DA *)multi_arg;
     char *value  = arg->_value;
 
-    for (int i = 0; i < loops; i++) {
+    for (int i = 0; i < arg->volume; i++) {
         pthread_mutex_lock(&mutex);
-        while (count == 0 || buffer[use_ptr] != 'B')
+        while (count == 0)
             pthread_cond_wait(&fill, &mutex);
+        while (buffer[use_ptr] != 'B')
+            pthread_cond_wait(&pop, &mutex);
         get(value);
+        pthread_cond_broadcast(&pop);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -79,11 +84,14 @@ void *consumer_C(void *multi_arg) {
     DA *arg = (DA *)multi_arg;
     char *value  = arg->_value;
 
-    for (int i = 0; i < loops; i++) {
+    for (int i = 0; i < arg->volume; i++) {
         pthread_mutex_lock(&mutex);
-        while (count == 0 || buffer[use_ptr] != 'C')
+        while (count == 0)
             pthread_cond_wait(&fill, &mutex);
+        while (buffer[use_ptr] != 'C')
+            pthread_cond_wait(&pop, &mutex);
         get(value);
+        pthread_cond_broadcast(&pop);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -100,37 +108,33 @@ void printQueue() {
 int main() {
     pthread_t p,c1,c2,c3;
 
-    EA *enqueue_arg1;
-    enqueue_arg1 = (EA *)malloc(sizeof(EA));
-    enqueue_arg1->_value = 'A';
+    char input[9] = {'A','A','B','C','A','C','C','B','B'};
 
-    EA *enqueue_arg2;
-    enqueue_arg2 = (EA *)malloc(sizeof(EA));
-    enqueue_arg2->_value = 'B';
-
-    EA *enqueue_arg3;
-    enqueue_arg3 = (EA *)malloc(sizeof(EA));
-    enqueue_arg3->_value = 'C';
-
-    DA *dequeue_arg;
+    DA dequeue_arg1;
     char pop_value;
-    dequeue_arg = (DA *)malloc(sizeof(DA));
-	dequeue_arg->_value = &pop_value;
+	dequeue_arg1._value = &pop_value;
+    dequeue_arg1.volume = 3;
 
-    pthread_create(&p, NULL, producer,enqueue_arg1);
-    pthread_create(&p, NULL, producer,enqueue_arg2);
-    pthread_create(&p, NULL, producer,enqueue_arg3);
+    DA dequeue_arg2;
+	dequeue_arg2._value = &pop_value;
+    dequeue_arg2.volume = 3;
 
-    pthread_join(p,NULL);
+    DA dequeue_arg3;
+	dequeue_arg3._value = &pop_value;
+    dequeue_arg3.volume = 3;
+
+    pthread_create(&p, NULL, producer,&input);
 
     printQueue();
+    pthread_create(&c1, NULL, consumer_A,&dequeue_arg1);
+    pthread_create(&c2, NULL, consumer_B,&dequeue_arg2);
+    pthread_create(&c3, NULL, consumer_C,&dequeue_arg3);
 
-    pthread_create(&c1, NULL, consumer_A,dequeue_arg);
-    pthread_create(&c2, NULL, consumer_B,dequeue_arg);
-    pthread_create(&c3, NULL, consumer_C,dequeue_arg);
-
+    pthread_join(p,NULL);
     pthread_join(c1,NULL);
-    // pthread_join(c2,NULL);
+    pthread_join(c2,NULL);
+    pthread_join(c3,NULL);
+
     // pthread_join(c3,NULL);
     
 
