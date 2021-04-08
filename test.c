@@ -60,35 +60,35 @@ void *u_prod(void *input) {
     }
 }
 
-void *u_consA() {
+void *u_consA(void *arg) {
     while(c_num < total) {
         if(cq.balance > 0 && cq.buffer[cq.front] != 'A') 
             get();
     }
 }
 
-void *u_consB() {
+void *u_consB(void *arg) {
     while(c_num < total) {
         if(cq.balance > 0 && cq.buffer[cq.front] != 'B') 
             get();
     }
 }
 
-void *u_consC() {
+void *u_consC(void *arg) {
     while(c_num < total) {
         if(cq.balance > 0 && cq.buffer[cq.front] != 'C') 
             get();
     }
 }
 
-void *u_consD() {
+void *u_consD(void *arg) {
     while(c_num < total) {
         if(cq.balance > 0 && cq.buffer[cq.front] != 'D') 
             get();
     }
 }
 
-void *u_consE() {
+void *u_consE(void *arg) {
     while(c_num < total) {
         if(cq.balance > 0 && cq.buffer[cq.front] != 'E') 
             get();
@@ -109,8 +109,8 @@ int main() {
 
     char input[9] = {'A','A','B','C','A','C','C','B','B'};
     
-    pthread_create(&p,NULL, u_prod, &input);
-    pthread_create(&c_a,NULL,(void *)u_consA,NULL);
+    pthread_create(&p,NULL,u_prod,&input);
+    pthread_create(&c_a,NULL,u_consA,NULL);
     pthread_create(&c_b,NULL,u_consB,NULL);
     pthread_create(&c_c,NULL,u_consC,NULL);
     pthread_create(&c_d,NULL,u_consD,NULL);
