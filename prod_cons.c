@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define MAX 10
+#define MAX 3
 
 char buffer[MAX];
 int fill_ptr = 0;
@@ -124,8 +124,6 @@ int main() {
     dequeue_arg3.volume = 3;
 
     pthread_create(&p, NULL, producer,&input);
-
-    printQueue();
     pthread_create(&c1, NULL, consumer_A,&dequeue_arg1);
     pthread_create(&c2, NULL, consumer_B,&dequeue_arg2);
     pthread_create(&c3, NULL, consumer_C,&dequeue_arg3);
@@ -136,8 +134,5 @@ int main() {
     pthread_join(c3,NULL);
 
     // pthread_join(c3,NULL);
-    
-
-    printQueue();
     printf("\n");
 }
