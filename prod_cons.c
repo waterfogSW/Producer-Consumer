@@ -4,9 +4,9 @@
 
 #define LINE_SIZE 10
 
-char order[100] = {'D','D','D','D','D','A','B','C','A','C','E','E','E','E','E','A','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B'};
+char order[100] = {'D','D','C','A','C','E','D','D','D','A','B','E','E','E','E','A','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B'};
 
-char buffer[LINE_SIZE];
+char *buffer;
 int rear = 0;
 int front = 0;
 int balance = 0;
@@ -58,7 +58,6 @@ void *c_consA(void *multi_arg) {
         while (balance == 0 || buffer[front] != 'A')
             pthread_cond_wait(&fill, &mutex);
         get(&value);
-        printf("A: %c \n", value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -72,7 +71,6 @@ void *c_consB(void *multi_arg) {
         while (balance == 0 || buffer[front] != 'B')
             pthread_cond_wait(&fill, &mutex);
         get(&value);
-        printf("B: %c \n", value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -86,7 +84,6 @@ void *c_consC(void *multi_arg) {
         while (balance == 0 || buffer[front] != 'C')
             pthread_cond_wait(&fill, &mutex);
         get(&value);
-        printf("C: %c \n", value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -100,7 +97,6 @@ void *c_consD(void *multi_arg) {
         while (balance == 0 || buffer[front] != 'D')
             pthread_cond_wait(&fill, &mutex);
         get(&value);
-        printf("D: %c \n", value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -114,7 +110,6 @@ void *c_consE(void *multi_arg) {
         while (balance == 0 || buffer[front] != 'E')
             pthread_cond_wait(&fill, &mutex);
         get(&value);
-        printf("E: %c \n", value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
@@ -130,21 +125,22 @@ void printQueue() {
 }
 
 int main() {
-    pthread_t p,c1,c2,c3,c4,c5;
+    buffer = malloc(sizeof(char) * LINE_SIZE);
+    pthread_t p,c_a,c_b,c_c,c_d,c_e;
 
     pthread_create(&p, NULL, c_prod,NULL);
-    pthread_create(&c1, NULL, c_consA,NULL);
-    pthread_create(&c2, NULL, c_consB,NULL);
-    pthread_create(&c3, NULL, c_consC,NULL);
-    pthread_create(&c4, NULL, c_consD,NULL);
-    pthread_create(&c5, NULL, c_consE,NULL);
+    pthread_create(&c_a, NULL, c_consA,NULL);
+    pthread_create(&c_b, NULL, c_consB,NULL);
+    pthread_create(&c_c, NULL, c_consC,NULL);
+    pthread_create(&c_d, NULL, c_consD,NULL);
+    pthread_create(&c_e, NULL, c_consE,NULL);
 
     pthread_join(p,NULL);
-    pthread_join(c1,NULL);
-    pthread_join(c2,NULL);
-    pthread_join(c3,NULL);
-    pthread_join(c4,NULL);
-    pthread_join(c5,NULL);
+    pthread_join(c_a,NULL);
+    pthread_join(c_b,NULL);
+    pthread_join(c_c,NULL);
+    pthread_join(c_d,NULL);
+    pthread_join(c_e,NULL);
 
     printQueue();
     printf("%d %d", pnum, cnum);
