@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define MAX 3
+#define MAX 10
 
 char buffer[MAX];
 int fill_ptr = 0;
@@ -10,7 +10,7 @@ int use_ptr = 0;
 int count = 0;
 int loops = 3;
 
-pthread_cond_t empty, fill, pop;
+pthread_cond_t empty, fill;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct Enqueue_arg {
@@ -37,7 +37,7 @@ void get(char* value) {
 
 void *producer(void *input) {
     char *car = (char*)input;
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 90; i++) {
         pthread_mutex_lock(&mutex);
         while (count == MAX)
             pthread_cond_wait(&empty, &mutex);
@@ -45,6 +45,10 @@ void *producer(void *input) {
         pthread_cond_broadcast(&fill);
         pthread_mutex_unlock(&mutex);
     }
+    while(count > 0) {
+        pthread_cond_broadcast(&fill);
+    }
+    return NULL;
 }
 
 void *consumer_A(void *multi_arg) {
@@ -52,15 +56,14 @@ void *consumer_A(void *multi_arg) {
     char *value  = arg->_value;
     for (int i = 0; i < arg->volume; i++) {
         pthread_mutex_lock(&mutex);
-        while (count == 0)
+        while (count == 0 || buffer[use_ptr] != 'A')
             pthread_cond_wait(&fill, &mutex);
-        while (buffer[use_ptr] != 'A')
-            pthread_cond_wait(&pop, &mutex);
         get(value);
-        pthread_cond_broadcast(&pop);
+        printf("A: %c \n", *value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
+    return NULL;
 }
 
 void *consumer_B(void *multi_arg) {
@@ -69,15 +72,14 @@ void *consumer_B(void *multi_arg) {
 
     for (int i = 0; i < arg->volume; i++) {
         pthread_mutex_lock(&mutex);
-        while (count == 0)
+        while (count == 0 || buffer[use_ptr] != 'B')
             pthread_cond_wait(&fill, &mutex);
-        while (buffer[use_ptr] != 'B')
-            pthread_cond_wait(&pop, &mutex);
         get(value);
-        pthread_cond_broadcast(&pop);
+        printf("B: %c \n", *value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
+    return NULL;
 }
 
 void *consumer_C(void *multi_arg) {
@@ -86,15 +88,14 @@ void *consumer_C(void *multi_arg) {
 
     for (int i = 0; i < arg->volume; i++) {
         pthread_mutex_lock(&mutex);
-        while (count == 0)
+        while (count == 0 || buffer[use_ptr] != 'C')
             pthread_cond_wait(&fill, &mutex);
-        while (buffer[use_ptr] != 'C')
-            pthread_cond_wait(&pop, &mutex);
         get(value);
-        pthread_cond_broadcast(&pop);
+        printf("C: %c \n", *value);
         pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
     }
+    return NULL;
 }
 
 void printQueue() {
@@ -108,24 +109,24 @@ void printQueue() {
 int main() {
     pthread_t p,c1,c2,c3;
 
-    char input[9] = {'A','A','B','C','A','C','C','B','B'};
+    char input[90] = {'A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B','A','A','B','C','A','C','C','B','B'};
 
     DA dequeue_arg1;
     char pop_value;
 	dequeue_arg1._value = &pop_value;
-    dequeue_arg1.volume = 3;
+    dequeue_arg1.volume = 30;
 
     DA dequeue_arg2;
 	dequeue_arg2._value = &pop_value;
-    dequeue_arg2.volume = 3;
+    dequeue_arg2.volume = 30;
 
     DA dequeue_arg3;
 	dequeue_arg3._value = &pop_value;
-    dequeue_arg3.volume = 3;
+    dequeue_arg3.volume = 30;
 
     pthread_create(&p, NULL, producer,&input);
-    pthread_create(&c1, NULL, consumer_A,&dequeue_arg1);
     pthread_create(&c2, NULL, consumer_B,&dequeue_arg2);
+    pthread_create(&c1, NULL, consumer_A,&dequeue_arg1);
     pthread_create(&c3, NULL, consumer_C,&dequeue_arg3);
 
     pthread_join(p,NULL);
@@ -133,6 +134,7 @@ int main() {
     pthread_join(c2,NULL);
     pthread_join(c3,NULL);
 
+    printQueue();
     // pthread_join(c3,NULL);
     printf("\n");
 }
